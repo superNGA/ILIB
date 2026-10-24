@@ -17,8 +17,6 @@ Vector Structure :
 
 */
 
-// Delete this.
-#include <stdio.h>
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -84,14 +82,17 @@ Vector Structure :
 #define vec_popback(arr) vec_erase((arr), vec_len(arr) - 1)
 
 #define vec_free(arr) do{ \
+	assert((arr) != NULL && "can't free an uninitialized array"); \
 	free(vec_get_header(arr)); \
 	(arr) = NULL; \
 } while(0)
 
 // Set element count as 0 for this vector.
 #define vec_clear(arr) do{ \
-	struct ilib_vec_header *hdr = vec_get_header(arr); \
-	hdr->size = 0; \
+	if (arr != NULL) { \
+		struct ilib_vec_header *hdr = vec_get_header(arr); \
+		hdr->size = 0; \
+	} \
 } while(0)
 
 #define vec_reserve(arr, size) do{ \
@@ -154,11 +155,16 @@ static void ilib_vec_grow(void** arr_out, size_t elem_size, size_t new_size)
 	// log(growth_rate^n) = log(new_size / old_capacity)
 	// n * log(growth_rate) = log(new_size / old_capacity)
 	// n = log(new_size / old_capacity) / log(growth_rate)
-	float old_capacity = (float)hdr->capacity;
-	float growth_power = log((float)new_size / old_capacity) / log((float)ILIB_VEC_GROWTH_RATE);
-	float new_capacity = old_capacity * pow((float)ILIB_VEC_GROWTH_RATE, ceil(growth_power));
+	// float old_capacity = (float)hdr->capacity;
+	// float growth_power = log((float)new_size / old_capacity) / log((float)ILIB_VEC_GROWTH_RATE);
+	// float new_capacity = old_capacity * pow((float)ILIB_VEC_GROWTH_RATE, ceil(growth_power));
+	
+	// Justification : If new size is significantly more than old capacity, then it is obviously not 
+	// following the +1 pattern, in which case, constant growth rate approach fails to deliver its 
+	// intended performance benefits. Therefore, we would be better resizing to the new unexpected size.
+	unsigned int new_capc = new_size >= hdr->capacity * 2 ? new_size : hdr->capacity * 2;
 
-	unsigned int safe_cap = (int)new_capacity + 1;
+	unsigned int safe_cap = new_capc + 1;
 	size_t safe_size = sizeof(struct ilib_vec_header) + elem_size * safe_cap;
 	assert(safe_cap > 0 && safe_cap >= new_size && "New capacity calculation has failed");
 	struct ilib_vec_header* new_hdr = (struct ilib_vec_header*)realloc(hdr, safe_size);

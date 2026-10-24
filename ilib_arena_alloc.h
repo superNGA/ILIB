@@ -39,7 +39,7 @@ struct ilib_arena {
 	int max_blocks;
 	int block_count;
 	void** blocks;
-	unsigned long long it; // holds total number of bytes used across all blocks. That means, it > block_size if arena_count > 1
+	unsigned long long it; // holds total number of bytes used across all blocks. That means, it > block_size if block_count > 1
 	int flags;
 };
 
